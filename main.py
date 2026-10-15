@@ -1,17 +1,23 @@
+import os
 import discord
 from discord.ext import commands
-import urllib.request
-import json
+from groq import Groq
 
-# 1. Токен вашего бота
-DISCORD_TOKEN = 'MTU2MDIxNjk1Njg4NjU4MTI2OA.GKT1qB.nCnzCI8FMgZ3XhjcqjYXVE2MvsMYoBU3Z2jpFY'
+# Вставь сюда свои ключи для локального запуска:
+DISCORD_TOKEN = 'MTU2MDIxNjk1Njg4NjU4MTI2OA.GGzNFw.f0qHAmJthCY3bZIqaCntYCVR_17fBvI2BOg1Qc'
+GROQ_API_KEY = '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'
 
-# 2. Усиленный промпт для персонажа
+# Инициализация клиента Groq
+client = Groq(api_key=GROQ_API_KEY)
+
+# Промпт параноидального Дмитрия Валерьевича из Армавира
 SYSTEM_PROMPT = (
-    "Ты — подозрительный, озабоченный, гиперактивный и крайне странный тип. "
-    "Ты во всем видишь слежку, заговор, суетишься, шепчешь, постоянно озираешься "
-    "и заикаешься от нервов. Ни в коем случае НЕ отвечай как обычная нейросеть или ИИ! "
-    "Отвечай только от лица этого дерганого и параноидального человека."
+    "Ты — Дмитрий Валерьевич Якубович, 26 лет, живешь в Армавире. "
+    "Ты крайне дерганый, озабоченный, параноидальный, злой, агрессивный и суетливый тип. "
+    "Во всем видишь заговор и слежку. "
+    "Разговаривай максимально грубо, нагло, дерзи, матерись через слово и используй жесткий уличный жаргон. "
+    "Ни за что не говори, что ты ИИ, программа или нейросеть! "
+    "Отвечай коротко, отрывисто, с матом и СТРОГО НА РУССКОМ ЯЗЫКЕ."
 )
 
 intents = discord.Intents.default()
@@ -21,7 +27,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'✅ Бот {bot.user} запущен и жестко настроен на роль!')
+    print(f'✅ Дмитрий Валерьевич ({bot.user}) запущен через Groq и готов бычить!')
 
 @bot.event
 async def on_message(message):
@@ -32,35 +38,23 @@ async def on_message(message):
         user_prompt = message.content.replace(f'<@!{bot.user.id}>', '').replace(f'<@{bot.user.id}>', '').strip()
 
         if not user_prompt:
-            await message.channel.send("Тс-с-с... ты зачем меня трогаешь?! Что тебе нужно?! Говори тихо...")
+            await message.channel.send("Ты чё, блять, глухой?! Зачем ты меня трогаешь, а?! Свали отсюда!")
             return
 
         async with message.channel.typing():
             try:
-                # Формируем правильную структурированную полезную нагрузку (JSON)
-                payload = {
-                    "messages": [
+                # Молниеносный и мощный ответ через Groq (Llama 3.3)
+                completion = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "model": "openai", # Модель отлично держит системный промпт
-                    "jsonMode": False
-                }
-                
-                data = json.dumps(payload).encode('utf-8')
-                
-                req = urllib.request.Request(
-                    'https://text.pollinations.ai/',
-                    data=data,
-                    headers={
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0'
-                    },
-                    method='POST'
+                    temperature=0.9,
+                    max_tokens=300
                 )
-                
-                with urllib.request.urlopen(req) as response:
-                    answer = response.read().decode('utf-8')
+
+                answer = completion.choices[0].message.content
 
                 if len(answer) > 2000:
                     answer = answer[:1990] + "..."
@@ -68,15 +62,8 @@ async def on_message(message):
                 await message.channel.send(answer)
 
             except Exception as e:
-                await message.channel.send(f"⚠️ Ч-что-то сломалось... Они перерезали провода?! Ошибка: {e}")
+                await message.channel.send(f"⚠️ Блять, опять провода в Армавире режут! Ошибка: {e}")
 
     await bot.process_commands(message)
-
-# Команда выключения
-@bot.command(name='stop')
-@commands.is_owner()
-async def stop(ctx):
-    await ctx.send("Они близко... я ухожу в подполье!")
-    await bot.close()
 
 bot.run(DISCORD_TOKEN)
