@@ -1,31 +1,12 @@
-import os
 import discord
 from discord.ext import commands
-import json
 import urllib.request
-from flask import Flask
-from threading import Thread
+import json
 
-# --- Микро-сервер для удержания бота в сети 24/7 на Render ---
-app = Flask('')
+# 1. Токен вашего бота
+DISCORD_TOKEN = 'MTU2MDIxNjk1Njg4NjU4MTI2OA.GKT1qB.nCnzCI8FMgZ3XhjcqjYXVE2MvsMYoBU3Z2jpFY'
 
-@app.route('/')
-def home():
-    return "Бот работает 24/7!"
-
-def run_web():
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host='0.0.0.0', port=port)
-
-def keep_alive():
-    t = Thread(target=run_web)
-    t.start()
-# -------------------------------------------------------------
-
-# Токен берется из переменных окружения (на Render) или подставляется локально
-DISCORD_TOKEN = os.getenv('MTU2MDIxNjk1Njg4NjU4MTI2OA.GqvVWa.sBjnDHRe8fnL20R2e8KNHnd8CWRpVMPhVjclOE')
-
-# Системный промпт (характер бота)
+# 2. Усиленный промпт для персонажа
 SYSTEM_PROMPT = (
     "Ты — подозрительный, озабоченный, гиперактивный и крайне странный тип. "
     "Ты во всем видишь слежку, заговор, суетишься, шепчешь, постоянно озираешься "
@@ -40,7 +21,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'✅ Бот {bot.user} запущен и держит оборону!')
+    print(f'✅ Бот {bot.user} запущен и жестко настроен на роль!')
 
 @bot.event
 async def on_message(message):
@@ -56,12 +37,13 @@ async def on_message(message):
 
         async with message.channel.typing():
             try:
+                # Формируем правильную структурированную полезную нагрузку (JSON)
                 payload = {
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_prompt}
                     ],
-                    "model": "openai",
+                    "model": "openai", # Модель отлично держит системный промпт
                     "jsonMode": False
                 }
                 
@@ -90,13 +72,11 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+# Команда выключения
 @bot.command(name='stop')
 @commands.is_owner()
 async def stop(ctx):
     await ctx.send("Они близко... я ухожу в подполье!")
     await bot.close()
 
-if __name__ == "__main__":
-    # Запускаем веб-сервер в фоне для Render и стартуем бота
-    keep_alive()
-    bot.run(DISCORD_TOKEN)
+bot.run(DISCORD_TOKEN)
